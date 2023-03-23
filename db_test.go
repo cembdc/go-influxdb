@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"testing"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/domain"
@@ -93,7 +94,14 @@ func Test_write_event_with_line_protocol(t *testing.T) {
 			client := init_testDB(t)
 			// call function under test
 			tt.f(client, tt.datas)
-			// TODO Validate the data
+
+			// test can be flicky if the query is done before that data is ready in the database
+			time.Sleep(time.Millisecond * 1000)
+
+			// TODO add validation
+			read_events_as_raw_string(client)
+
+			client.Close()
 		})
 	}
 }

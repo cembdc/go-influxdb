@@ -72,3 +72,31 @@ func write_event_with_fluent_Style(client influxdb2.Client, t ThermostatSetting)
 	// Flush writes
 	writeAPI.Flush()
 }
+
+func read_events_as_raw_string(client influxdb2.Client) {
+	// Get query client
+	queryAPI := client.QueryAPI(org)
+
+	// Query
+	fluxQuery := fmt.Sprintf(`from(bucket: "%s")
+    |> range(start: -1h)
+    |> filter(fn: (r) => r["_measurement"] == "thermostat")
+    |> yield(name: "mean")`, bucket)
+
+	result, err := queryAPI.QueryRaw(context.Background(), fluxQuery, influxdb2.DefaultDialect())
+	if err == nil {
+		fmt.Println("QueryResult:")
+		fmt.Println(result)
+	} else {
+		panic(err)
+	}
+}
+
+// from(bucket: "test")
+//   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+//   |> filter(fn: (r) => r["_measurement"] == "thermostat")
+//   |> filter(fn: (r) => r["user"] == "foo")
+//   |> filter(fn: (r) => r["unit"] == "temperature")
+//   |> filter(fn: (r) => r["_field"] == "max" or r["_field"] == "avg")
+//   |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)
+//   |> yield(name: "mean")
