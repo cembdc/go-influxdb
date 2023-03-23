@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -97,6 +98,20 @@ func Test_write_event_with_line_protocol(t *testing.T) {
 
 			// test can be flicky if the query is done before that data is ready in the database
 			time.Sleep(time.Millisecond * 1000)
+
+			// Option one: QueryTableResult
+			results := read_events_as_query_table_result(client)
+			// convert results to array to compare with data
+			resultsArr := []ThermostatSetting{}
+			for _, v := range results {
+				resultsArr = append(resultsArr, v)
+			}
+
+			if eq := reflect.DeepEqual(resultsArr, tt.datas); !eq {
+				t.Errorf("want %v, got %v", tt.datas, resultsArr)
+			}
+
+			// Option two: query raw data
 
 			// TODO add validation
 			read_events_as_raw_string(client)
