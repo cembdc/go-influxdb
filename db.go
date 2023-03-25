@@ -73,6 +73,23 @@ func write_event_with_fluent_Style(client influxdb2.Client, t ThermostatSetting)
 	writeAPI.Flush()
 }
 
+func write_coin_event_with_fluent_Style(client influxdb2.Client, t BinanceAsset) {
+	// Use blocking write client for writes to desired bucket
+	writeAPI := client.WriteAPI(org, bucket)
+	// create point using fluent style
+	p := influxdb2.NewPointWithMeasurement("prices").
+		AddTag("exchange", "binance").
+		AddTag("symbol", t.Symbol).
+		AddField("open", t.Open).
+		AddField("close", t.Close).
+		AddField("high", t.High).
+		AddField("low", t.Low).
+		SetTime(t.Time)
+	writeAPI.WritePoint(p)
+	// Flush writes
+	writeAPI.Flush()
+}
+
 func read_events_as_raw_string(client influxdb2.Client) {
 	// Get query client
 	queryAPI := client.QueryAPI(org)
@@ -131,6 +148,72 @@ func read_events_as_query_table_result(client influxdb2.Client) map[time.Time]Th
 				val.avg = result.Record().Value().(float64)
 			case "max":
 				val.max = result.Record().Value().(float64)
+			default:
+				fmt.Printf("unrecognized field %s.\n", field)
+			}
+
+			resultPoints[result.Record().Time()] = val
+
+		}
+		// check for an error
+		if result.Err() != nil {
+			fmt.Printf("query parsing error: %s\n", result.Err().Error())
+		}
+	} else {
+		panic(err)
+	}
+
+	return resultPoints
+
+}
+
+func read_coin_events_as_query_table_result(client influxdb2.Client) map[time.Time]BinanceAsset {
+
+	// Get query client
+	queryAPI := client.QueryAPI(org)
+
+	// Query. You need to change a bit the Query from the Query Builder
+	// Otherwise it won't work
+	fluxQuery := fmt.Sprintf(`from(bucket: "%s")
+	|> range(start: -1h)
+	|> filter(fn: (r) => r["exchange"] == "binance")
+	|> filter(fn: (r) => r["symbol"] == "BTCUSDT")
+	|> filter(fn: (r) => r["_measurement"] == "trades")
+	|> filter(fn: (r) => r["_field"] == "close" or r["_field"] == "high" or r["_field"] == "low" or r["_field"] == "open")
+	|> yield(name: "sort")`, bucket)
+
+	result, err := queryAPI.Query(context.Background(), fluxQuery)
+
+	// Putting back the data in share requires a bit of work
+	var resultPoints map[time.Time]BinanceAsset
+	resultPoints = make(map[time.Time]BinanceAsset)
+
+	if err == nil {
+		// Iterate over query response
+		for result.Next() {
+			// Notice when group key has changed
+			if result.TableChanged() {
+				fmt.Printf("table: %s\n", result.TableMetadata().String())
+			}
+
+			val, ok := resultPoints[result.Record().Time()]
+
+			if !ok {
+				val = BinanceAsset{
+					Symbol: fmt.Sprintf("%v", result.Record().ValueByKey("symbol")),
+					// user: fmt.Sprintf("%v", result.Record().ValueByKey("user")),
+				}
+			}
+
+			switch field := result.Record().Field(); field {
+			case "open":
+				val.Open = result.Record().Value().(float64)
+			case "close":
+				val.Close = result.Record().Value().(float64)
+			case "high":
+				val.High = result.Record().Value().(float64)
+			case "low":
+				val.Low = result.Record().Value().(float64)
 			default:
 				fmt.Printf("unrecognized field %s.\n", field)
 			}

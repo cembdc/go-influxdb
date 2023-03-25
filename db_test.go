@@ -120,3 +120,61 @@ func Test_write_event_with_line_protocol(t *testing.T) {
 		})
 	}
 }
+
+func Test_write_coin_event_with_line_protocol(t *testing.T) {
+
+	client := init_testDB(t)
+
+	assets := []BinanceAsset{}
+	assets = []BinanceAsset{
+		{Symbol: "BTCUSDT", Open: 22799.94000000, Close: 22804.36000000, High: 22771.32000000, Low: 22781.59000000},
+		{Symbol: "BTCUSDT", Open: 12781.59000000, Close: 12791.19000000, High: 12774.22000000, Low: 12779.73000000},
+		{Symbol: "BTCUSDT", Open: 16779.73000000, Close: 16801.10000000, High: 16779.73000000, Low: 16797.62000000},
+		{Symbol: "BTCUSDT", Open: 18796.63000000, Close: 18814.71000000, High: 18794.17000000, Low: 18813.10000000},
+		{Symbol: "BTCUSDT", Open: 15812.58000000, Close: 15815.45000000, High: 15801.33000000, Low: 15801.97000000},
+		{Symbol: "BTCUSDT", Open: 20803.00000000, Close: 20810.97000000, High: 20793.00000000, Low: 20806.12000000},
+		{Symbol: "BTCUSDT", Open: 21806.56000000, Close: 21813.35000000, High: 21794.72000000, Low: 21800.85000000},
+		{Symbol: "BTCUSDT", Open: 19800.85000000, Close: 19824.15000000, High: 19795.07000000, Low: 19818.93000000},
+		{Symbol: "BTCUSDT", Open: 17818.93000000, Close: 17826.82000000, High: 17807.24000000, Low: 17809.98000000},
+		{Symbol: "BTCUSDT", Open: 22809.60000000, Close: 22819.73000000, High: 22798.50000000, Low: 22801.94000000},
+		{Symbol: "ETHUSDT", Open: 3274.94000000, Close: 3285.19000000, High: 3270.00000000, Low: 3277.96000000},
+		{Symbol: "ETHUSDT", Open: 4279.96000000, Close: 4277.96000000, High: 4277.18000000, Low: 4274.04000000},
+		{Symbol: "ETHUSDT", Open: 2299.19000000, Close: 2280.67000000, High: 2276.72000000, Low: 2270.09000000},
+		{Symbol: "ETHUSDT", Open: 1270.08000000, Close: 1283.52000000, High: 1276.41000000, Low: 1271.79000000},
+		{Symbol: "ETHUSDT", Open: 3279.79000000, Close: 3274.22000000, High: 3278.80000000, Low: 3274.68000000},
+		{Symbol: "ETHUSDT", Open: 2274.68000000, Close: 2278.00000000, High: 2274.72000000, Low: 2279.19000000},
+		{Symbol: "ETHUSDT", Open: 5279.71000000, Close: 5270.94000000, High: 5279.62000000, Low: 5276.20000000},
+		{Symbol: "ETHUSDT", Open: 6276.06000000, Close: 6274.66000000, High: 6270.00000000, Low: 6273.07000000},
+		{Symbol: "ETHUSDT", Open: 9275.08000000, Close: 9271.13000000, High: 9271.98000000, Low: 9276.70000000},
+		{Symbol: "ETHUSDT", Open: 1276.14000000, Close: 1277.19000000, High: 1279.03000000, Low: 1277.36000000},
+	}
+
+	timeNow := time.Now()
+	// Open := 22799.94000000
+	// Close := 22804.36000000
+	// High := 22771.32000000
+	// Low := 22781.59000000
+	for _, data := range assets {
+		timeNow = timeNow.Add(time.Duration(time.Minute) * -1)
+		// Open += 100
+		// Close += 100
+		// High += 100
+		// Low += 100
+		data.Time = timeNow
+		// data.Open = Open
+		// data.Close = Close
+		// data.High = High
+		// data.Low = Low
+		write_coin_event_with_fluent_Style(client, data)
+		time.Sleep(time.Millisecond * 3000)
+	}
+
+	results := read_coin_events_as_query_table_result(client)
+	// convert results to array to compare with data
+	resultsArr := []BinanceAsset{}
+	for _, v := range results {
+		resultsArr = append(resultsArr, v)
+	}
+
+	client.Close()
+}
