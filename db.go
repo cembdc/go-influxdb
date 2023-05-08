@@ -11,7 +11,7 @@ import (
 )
 
 var org = "local"
-var bucket = "test"
+var bucket = "crypto" //"test"
 
 // Connect to an Influx Database reading the credentials from
 // environment variables INFLUXDB_TOKEN, INFLUXDB_URL
@@ -90,15 +90,15 @@ func write_coin_event_with_fluent_Style(client influxdb2.Client, t BinanceAsset)
 	writeAPI.Flush()
 }
 
-func read_events_as_raw_string(client influxdb2.Client) {
+func read_events_as_raw_string(client influxdb2.Client) string {
 	// Get query client
 	queryAPI := client.QueryAPI(org)
 
 	// Query
 	fluxQuery := fmt.Sprintf(`from(bucket: "%s")
     |> range(start: -1h)
-    |> filter(fn: (r) => r["_measurement"] == "thermostat")
-    |> yield(name: "mean")`, bucket)
+    |> filter(fn: (r) => r["_measurement"] == "prices")
+    |> yield(name: "sort")`, bucket)
 
 	result, err := queryAPI.QueryRaw(context.Background(), fluxQuery, influxdb2.DefaultDialect())
 	if err == nil {
@@ -107,6 +107,8 @@ func read_events_as_raw_string(client influxdb2.Client) {
 	} else {
 		panic(err)
 	}
+
+	return result
 }
 
 func read_events_as_query_table_result(client influxdb2.Client) map[time.Time]ThermostatSetting {
@@ -176,9 +178,7 @@ func read_coin_events_as_query_table_result(client influxdb2.Client) map[time.Ti
 	// Otherwise it won't work
 	fluxQuery := fmt.Sprintf(`from(bucket: "%s")
 	|> range(start: -1h)
-	|> filter(fn: (r) => r["exchange"] == "binance")
-	|> filter(fn: (r) => r["symbol"] == "BTCUSDT")
-	|> filter(fn: (r) => r["_measurement"] == "trades")
+	|> filter(fn: (r) => r["_measurement"] == "prices")
 	|> filter(fn: (r) => r["_field"] == "close" or r["_field"] == "high" or r["_field"] == "low" or r["_field"] == "open")
 	|> yield(name: "sort")`, bucket)
 

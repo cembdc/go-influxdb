@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -176,5 +177,29 @@ func Test_write_coin_event_with_line_protocol(t *testing.T) {
 		resultsArr = append(resultsArr, v)
 	}
 
+	client.Close()
+}
+
+func Test_read_coin_events_as_query_table_result(t *testing.T) {
+
+	client := init_testDB(t)
+
+	results := read_coin_events_as_query_table_result(client)
+	// convert results to array to compare with data
+	resultsArr := []BinanceAsset{}
+	for _, v := range results {
+		resultsArr = append(resultsArr, v)
+	}
+
+	client.Close()
+}
+
+func Test_read_events_as_raw_string(t *testing.T) {
+
+	client := init_testDB(t)
+
+	results := read_events_as_raw_string(client)
+
+	fmt.Println(results)
 	client.Close()
 }
